@@ -1,0 +1,15 @@
+{
+  "name": "saasy",
+  "version": "0.1.0",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean"
+  },
+  "workspaces": [
+    "./packages/*"
+  ],
+  "dependencies": {
+    "@mui/icons-material": "^5.11.0"
+  }
+}
