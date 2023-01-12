@@ -12,8 +12,12 @@ export enum PlayerType {
   HUMAN = 'Human'
 }
 
-export interface Player {
+export interface User {
   id: string
+  name: string
+}
+
+export interface Player extends User {
   marker: CellValue
   moving: boolean
 }

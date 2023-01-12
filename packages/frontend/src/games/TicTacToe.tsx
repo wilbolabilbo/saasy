@@ -14,12 +14,14 @@ class TicTacToe extends Component<GameProps> {
   ws = new WebSocket(SERVER_URL)
 
   componentDidMount() {
-    const { userID } = this.props
+    const { userID, userName } = this.props
 
     this.ws.onopen = () => {
 
       if (userID && this.state.selectedOpponentType) {
-        const message: GameRequest = { userID, type: GameActionType.INIT, action: { opponentType: this.state.selectedOpponentType } }
+        const message: GameRequest = { 
+          userID, userName, type: GameActionType.INIT, 
+          action: { opponentType: this.state.selectedOpponentType } }
         this.ws.send(JSON.stringify(message))
       }
     }
@@ -49,14 +51,19 @@ class TicTacToe extends Component<GameProps> {
     const { userID } = this.props
 
     if (userID) {
-      const message: GameRequest = { userID, type: GameActionType.PLAY, action: { gameID: this.state.game!.id, cell } }
+      const message: GameRequest = { 
+        userID, userName: this.props.userName, type: GameActionType.PLAY, 
+        action: { gameID: this.state.game!.id, cell } }
       this.ws.send(JSON.stringify(message))
     }
   }
 
   getPlayer(game: GameState) {
-    const { userID } = this.props
-    return game.playerOne.id === userID ? game.playerOne : game.playerTwo
+    return game.playerOne.id === this.props.userID ? game.playerOne : game.playerTwo
+  }
+
+  getOpponent(game: GameState) {
+    return game.playerOne.id === this.props.userID ? game.playerTwo : game.playerOne
   }
 
   handleOpponentChange(event: SelectChangeEvent<PlayerType>) {
@@ -64,7 +71,9 @@ class TicTacToe extends Component<GameProps> {
     this.setState({
       selectedOpponentType: event.target.value
     }, () => {
-      const message: GameRequest = { userID, type: GameActionType.INIT, action: { opponentType: this.state.selectedOpponentType! } }
+      const message: GameRequest = { 
+        userID, userName: this.props.userName, type: GameActionType.INIT, 
+        action: { opponentType: this.state.selectedOpponentType! } }
       this.ws.send(JSON.stringify(message))
     })
   }
@@ -88,6 +97,9 @@ class TicTacToe extends Component<GameProps> {
           </FormControl>
         </Container>
         <Container maxWidth="md" style={{ marginTop: '10px' }}>
+          {
+            this.state.game && <h3 style={{ color: 'blue' }}>Playing: {this.getOpponent(this.state.game).name}</h3>
+          }
           <TableContainer>
             <Table
               sx={{

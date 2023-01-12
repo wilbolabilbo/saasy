@@ -1,7 +1,7 @@
 import {WSRequest, WSResponse} from "./Messaging"
 import { Game, Player, PlayerType } from "./Platform"
 
-export type GameProps = { userID?: string }
+export type GameProps = { userID: string, userName: string }
 
 export enum CellValue {
   X = 'X',
@@ -19,8 +19,7 @@ export type Board = CellValue[][]
 
 export enum GameActionType {
   INIT,
-  PLAY/* ,
-  WAIT*/
+  PLAY
 }
 
 export enum PlayerStatus {
@@ -55,6 +54,7 @@ export interface GameState {
 }
 
 export interface GameRequest extends WSRequest {
+  userName: string
   type: GameActionType
   action: GameInit | GameMove | GameWait
 }

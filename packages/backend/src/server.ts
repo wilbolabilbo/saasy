@@ -2,32 +2,33 @@ import * as WebSocket from 'ws'
 import { v1 as uuid } from 'uuid'
 import { CellValue, GameActionType, GameState, Cell, Board, PlayerStatus, GameRequest, GameMove, GameResponse, GameInit } from '../../frontend/src/model/Game'
 import { AiID, SERVER_PORT } from '../../frontend/src/constants/settings'
-import {Player, PlayerType, StatusResponse} from '../../frontend/src/model/Platform'
+import {Player, PlayerType, StatusResponse, User} from '../../frontend/src/model/Platform'
 
 const wss = new WebSocket.Server({ port: SERVER_PORT })
 const gameMap: Map<string, GameState> = new Map()
-let queue: string[] = []
+let queue: User[] = []
 
 wss.on('connection', function connection(ws) {
 
   ws.on('message', function incoming(message: Buffer) {
     const gameMessage: GameRequest = JSON.parse(message.toString())
+    const playerOne = { id: gameMessage.userID, name: gameMessage.userName }
     let game: GameState
 
     switch (gameMessage.type) {
       case GameActionType.INIT:
-        queue = queue.filter(id => id !== gameMessage.userID) // can't play yourself
+        queue = queue.filter(player => player.id !== gameMessage.userID) // can't play yourself
         const init = gameMessage.action as unknown as GameInit
-        let playerTwoID
+        let playerTwo
 
         if (init.opponentType === PlayerType.HUMAN && queue.length > 0) {
           // check queue, return wait if noone available
-          playerTwoID = queue.shift()
+          playerTwo = queue.shift()
         } else if (init.opponentType === PlayerType.AI) {
-          playerTwoID = AiID
+          playerTwo = { id: AiID, name: 'Hal' }
         } else {
           // wait
-          queue.push(gameMessage.userID)
+          queue.push(playerOne)
           const status: StatusResponse = { userIDs: [gameMessage.userID], status: { player: PlayerStatus.WAITING }}
           wss.clients.forEach((client: any) => {
             if (client.readyState === WebSocket.OPEN) {
@@ -36,7 +37,7 @@ wss.on('connection', function connection(ws) {
           })
           break
         }
-        game = initGame(gameMessage.userID, playerTwoID)
+        game = initGame(playerOne, playerTwo)
           gameMap.set(game.id!, game)
           const response: GameResponse = { userIDs: [game.playerOne.id, game.playerTwo.id], game }
           
@@ -103,16 +104,18 @@ function getNextPlayer(currentPlayerID: string, game: GameState) {
   return (game.playerOne && game.playerOne.id === currentPlayerID) ? game.playerTwo : game.playerOne
 }
 
-function initGame(playerOneID: string, playerTwoID: string): GameState {
+function initGame(playerOne: User, playerTwo: User): GameState {
   return {
     id: uuid(),
     playerOne: {
-      id: playerOneID,
+      id: playerOne.id,
+      name: playerOne.name,
       marker: CellValue.X,
       moving: true
     },
     playerTwo: {
-      id: playerTwoID,
+      id: playerTwo.id,
+      name: playerTwo.name,
       marker: CellValue.O,
       moving: false
     },
@@ -124,7 +127,6 @@ function initGame(playerOneID: string, playerTwoID: string): GameState {
 }
 
 function isWinner(currentPlayerID: string, game: GameState) {
-
   const winningCell = getWinningCell(game)
 
   if (winningCell) {
